@@ -10,168 +10,193 @@
  */
 class CVM_GoogleTagManager_Block_Gtm extends Mage_Core_Block_Template
 {
-	/**
-	 * Generate JavaScript for the container snippet.
-	 *
-	 * @return string
-	 */
-	protected function _getContainerSnippet()
-	{
-		// Get the container ID.
-		$containerId = Mage::helper('googletagmanager')->getContainerId();
+    /**
+     * Generate JavaScript for the container snippet.
+     *
+     * @return string
+     */
+    protected function _getContainerSnippet()
+    {
+        // Get the container ID.
+        $containerId = Mage::helper('googletagmanager')->getContainerId();
 
-		// Render the container snippet JavaScript.
-		return "<noscript><iframe src=\"//www.googletagmanager.com/ns.html?id=".$containerId."\"
-height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript>
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','".$containerId."');</script>\n";
-	}
+        // Render the container snippet JavaScript.
+		return "<noscript><iframe src=\"//www.googletagmanager.com/ns.html?id=".$containerId."\" height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','".$containerId."');</script>\n";
 
-	/**
-	 * Generate JavaScript for the data layer.
-	 *
-	 * @return string|null
-	 */
-	protected function _getDataLayer()
-	{
-		// Initialise our data source.
-		$data = array();
 
-		// Get transaction and visitor data, if desired.
-		if (Mage::helper('googletagmanager')->isDataLayerTransactionsEnabled()) $data = $data + $this->_getTransactionData();
-		if (Mage::helper('googletagmanager')->isDataLayerVisitorsEnabled()) $data = $data + $this->_getVisitorData();
+    }
 
-		// Generate the data layer JavaScript.
-		if (!empty($data)) return "<script>dataLayer = [".json_encode($data)."];</script>\n\n";
-		else return '';
-	}
+    /**
+     * Generate JavaScript for the data layer.
+     *
+     * @return string|null
+     */
+    protected function _getDataLayer()
+    {
+        // Initialise our data source.
+        $data = array();
 
-	/**
-	 * Get transaction data for use in the data layer.
-	 *
-	 * @link https://developers.google.com/tag-manager/reference
-	 * @return array
-	 */
-	protected function _getTransactionData()
-	{
-		$data = array();
+        // Get transaction and visitor data, if desired.
+        if (Mage::helper('googletagmanager')->isDataLayerTransactionsEnabled()) $data = $data + $this->_getTransactionData();
+        if (Mage::helper('googletagmanager')->isDataLayerVisitorsEnabled()) $data = $data + $this->_getVisitorData();
 
-		$orderIds = $this->getOrderIds();
-		if (empty($orderIds) || !is_array($orderIds)) return array();
+        // Generate the data layer JavaScript.
+        if (!empty($data)) return "<script>dataLayer = [".json_encode($data)."];</script>\n\n";
+        else return '';
+    }
 
-		$collection = Mage::getResourceModel('sales/order_collection')->addFieldToFilter('entity_id', array('in' => $orderIds));
+    /**
+     * Get transaction data for use in the data layer.
+     *
+     * @link https://developers.google.com/tag-manager/reference
+     * @return array
+     */
+    protected function _getTransactionData()
+    {
+        $data = array();
 
-		$i = 0;
-		$products = array();
+        $orderIds = $this->getOrderIds();
+        if (empty($orderIds) || !is_array($orderIds)) return array();
 
-		foreach ($collection as $order) {
-			if ($i == 0) {
-				// Build all fields for first order.
-				$data = array(
-					'transactionId' => $order->getIncrementId(),
-					'transactionDate' => date("Y-m-d"),
-					'transactionType' => Mage::helper('googletagmanager')->getTransactionType(),
-					'transactionAffiliation' => Mage::helper('googletagmanager')->getTransactionAffiliation(),
-					'transactionTotal' => round($order->getBaseGrandTotal(),2),
-					'transactionShipping' => round($order->getBaseShippingAmount(),2),
-					'transactionTax' => round($order->getBaseTaxAmount(),2),
-					'transactionPaymentType' => $order->getPayment()->getMethodInstance()->getTitle(),
-					'transactionCurrency' => $order->getOrderCurrencyCode(),
-					'transactionShippingMethod' => $order->getShippingCarrier()->getCarrierCode(),
-					'transactionPromoCode' => $order->getCouponCode(),
-					'transactionProducts' => array()
-				);
-			} else {
-				// For subsequent orders, append to order ID, totals and shipping method.
-				$data['transactionId'] .= '|'.$order->getIncrementId();
-				$data['transactionTotal'] += $order->getBaseGrandTotal();
-				$data['transactionShipping'] += $order->getBaseShippingAmount();
-				$data['transactionTax'] += $order->getBaseTaxAmount();
-				$data['transactionShippingMethod'] .= '|'.$order->getShippingCarrier()->getCarrierCode();
+        $collection = Mage::getResourceModel('sales/order_collection')->addFieldToFilter('entity_id', array('in' => $orderIds));
+
+        $i = 0;
+        $products = array();
+
+        foreach ($collection as $order) {
+            if ($i == 0) {
+                // Build all fields for first order.
+                $data = array(
+                    'transactionId' => $order->getIncrementId(),
+                    'transactionDate' => date("Y-m-d"),
+                    'transactionType' => Mage::helper('googletagmanager')->getTransactionType(),
+                    'transactionAffiliation' => Mage::helper('googletagmanager')->getTransactionAffiliation(),
+                    'transactionTotal' => round($order->getBaseGrandTotal(),2),
+                    'transactionShipping' => round($order->getBaseShippingAmount(),2),
+                    'transactionTax' => round($order->getBaseTaxAmount(),2),
+                    'transactionPaymentType' => $order->getPayment()->getMethodInstance()->getTitle(),
+                    'transactionCurrency' => $order->getOrderCurrencyCode(),
+                    'transactionShippingMethod' => $order->getShippingCarrier()->getCarrierCode(),
+                    'transactionPromoCode' => $order->getCouponCode(),
+                    'transactionProducts' => array()
+                );
+            } else {
+                // For subsequent orders, append to order ID, totals and shipping method.
+                $data['transactionId'] .= '|'.$order->getIncrementId();
+                $data['transactionTotal'] += $order->getBaseGrandTotal();
+                $data['transactionShipping'] += $order->getBaseShippingAmount();
+                $data['transactionTax'] += $order->getBaseTaxAmount();
+                $data['transactionShippingMethod'] .= '|'.$order->getShippingCarrier()->getCarrierCode();
+            }
+
+            // Build products array.
+            foreach ($order->getAllVisibleItems() as $item) {
+				$product = Mage::getModel('catalog/product')->load($item->getProductId()); // $product = Mage::getModel('catalog/product')->loadByAttribute('sku',$item->getSku());
+
+                if ($product) {
+				    $category_ids = $product->getCategoryIds();
+
+				    $category_names = array();
+				    foreach ($category_ids as $category_id) {
+					    $category_names[] = Mage::getModel('catalog/category')->load($category_id)->getName();
+				    }
+
+				    if (empty($products[$item['sku']])) { // 
+                    // Build all fields the first time we encounter this item.
+					    $products[$item['sku']] = array(
+                        'name' => $this->jsQuoteEscape(Mage::helper('core')->escapeHtml($item->getName())),
+						    'sku' => $this->jsQuoteEscape(Mage::helper('core')->escapeHtml($item['sku'])),
+						    'category' => implode('|',$category_names),
+                        'price' => (double)number_format($item->getBasePrice(),2,'.',''),
+                        'quantity' => (int)$item->getQtyOrdered()
+                    );
+                } else {
+                    // If we already have the item, update quantity.
+					    $products[$item['sku']]['quantity'] += (int)$item->getQtyOrdered();
+                }
+            }
 			}
 
-			// Build products array.
-			foreach ($order->getAllVisibleItems() as $item) {
-				$product = Mage::getModel('catalog/product')->loadByAttribute('sku',$item->getSku());
-				$product_categories = $product->getCategoryIds();
-				$categories = array();
-				foreach ($product_categories as $category) {
-					$categories[] = Mage::getModel('catalog/category')->load($category)->getName();
-				}
-				if (empty($products[$item->getSku()])) {
-					// Build all fields the first time we encounter this item.
-					$products[$item->getSku()] = array(
-						'name' => $this->jsQuoteEscape(Mage::helper('core')->escapeHtml($item->getName())),
-						'sku' => $this->jsQuoteEscape(Mage::helper('core')->escapeHtml($item->getSku())),
-						'category' => implode('|',$categories),
-						'price' => (double)number_format($item->getBasePrice(),2,'.',''),
-						'quantity' => (int)$item->getQtyOrdered()
-					);
-				} else {
-					// If we already have the item, update quantity.
-					$products[$item->getSku()]['quantity'] += (int)$item->getQtyOrdered();
-				}
-			}
+            $i++;
+        }
 
-			$i++;
-		}
+        // Push products into main data array.
+        $transactionTotalExcVatAndShip = 0;
+        foreach ($products as $product) {
+            $data['transactionProducts'][] = $product;
+            $transactionTotalExcVatAndShip += ($product['price'] * $product['quantity']);
+        }
 
-		// Push products into main data array.
-		foreach ($products as $product) {
-			$data['transactionProducts'][] = $product;
-		}
+        $data['transactionTotalExcVatAndShip'] = (double)number_format($transactionTotalExcVatAndShip,2,'.','');
 
-		// Trim empty fields from the final output.
-		foreach ($data as $key => $value) {
-			if (!is_numeric($value) && empty($value)) unset($data[$key]);
-		}
+        // Trim empty fields from the final output.
+        foreach ($data as $key => $value) {
+            if (!is_numeric($value) && empty($value)) unset($data[$key]);
+        }
 
-		return $data;
-	}
+        return $data;
+    }
 
-	/**
-	 * Get visitor data for use in the data layer.
-	 *
-	 * @link https://developers.google.com/tag-manager/reference
-	 * @return array
-	 */
-	protected function _getVisitorData()
-	{
-		$data = array();
-		$customer = Mage::getSingleton('customer/session');
+    /**
+     * Get visitor data for use in the data layer.
+     *
+     * @link https://developers.google.com/tag-manager/reference
+     * @return array
+     */
+    protected function _getVisitorData()
+    {
+        $data = array();
+        $customer = Mage::getSingleton('customer/session');
 
-		// visitorId
-		if ($customer->getCustomerId()) $data['visitorId'] = (string)$customer->getCustomerId();
+        // product page
+        if (Mage::registry('current_product'))
+        {
+            $data['event'] = 'prod_page';
+            $data['page_name'] =  Mage::getSingleton('core/url')->parseUrl(Mage::helper('core/url')->getCurrentUrl())->getPath();
+            $product_id = Mage::registry('current_product')->getId();
+            if ($product_id) {
+                $product = Mage::getModel('catalog/product')->load($product_id);
+                if ($product) {
+                    $category_names = array();
+                    $category_ids = $product->getCategoryIds();
+                    foreach ($category_ids as $category_id) {
+                        $category_names[] = Mage::getModel('catalog/category')->load($category_id)->getName();
+                    }
+                    $data['category_names'] = implode('|', $category_names);
+                }
+            }
+        }
 
-		// visitorLoginState
-		$data['visitorLoginState'] = ($customer->isLoggedIn()) ? 'Logged in' : 'Logged out';
+        // visitorId
+        if ($customer->getCustomerId()) $data['visitorId'] = (string)$customer->getCustomerId();
 
-		// visitorType
-		$data['visitorType'] = (string)Mage::getModel('customer/group')->load($customer->getCustomerGroupId())->getCode();
+        // visitorLoginState
+        $data['visitorLoginState'] = ($customer->isLoggedIn()) ? 'Logged in' : 'Logged out';
 
-		// visitorExistingCustomer / visitorLifetimeValue
-		$orders = Mage::getResourceModel('sales/order_collection')->addFieldToSelect('*')->addFieldToFilter('customer_id',$customer->getId());
-		$ordersTotal = 0;
-		foreach ($orders as $order) {
-			$ordersTotal += $order->getGrandTotal();
-		}
-		$data['visitorLifetimeValue'] = round($ordersTotal,2);
-		$data['visitorExistingCustomer'] = ($ordersTotal > 0) ? 'Yes' : 'No';
+        // visitorType
+        $data['visitorType'] = (string)Mage::getModel('customer/group')->load($customer->getCustomerGroupId())->getCode();
 
-		return $data;
-	}
+        // visitorExistingCustomer / visitorLifetimeValue
+        $orders = Mage::getResourceModel('sales/order_collection')->addFieldToSelect('*')->addFieldToFilter('customer_id',$customer->getId());
+        $ordersTotal = 0;
+        foreach ($orders as $order) {
+            $ordersTotal += $order->getGrandTotal();
+        }
+        $data['visitorLifetimeValue'] = round($ordersTotal,2);
+        $data['visitorExistingCustomer'] = ($ordersTotal > 0) ? 'Yes' : 'No';
 
-	/**
-	 * Render Google Tag Manager code
-	 *
-	 * @return string
-	 */
-	protected function _toHtml()
-	{
-		if (!Mage::helper('googletagmanager')->isGoogleTagManagerAvailable()) return '';
-		return parent::_toHtml();
-	}
+        return $data;
+    }
+
+    /**
+     * Render Google Tag Manager code
+     *
+     * @return string
+     */
+    protected function _toHtml()
+    {
+        if (!Mage::helper('googletagmanager')->isGoogleTagManagerAvailable()) return '';
+        return parent::_toHtml();
+    }
 }
